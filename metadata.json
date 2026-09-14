@@ -1,0 +1,7 @@
+{
+  "name": "AURA Lifestyle - Fashion & Clothing Bangladesh",
+  "description": "A modern, professional e-commerce platform for contemporary Bangladeshi fashion and clothing with shopping cart, multi-step checkout with bKash/Nagad/COD, order tracking, and comprehensive admin dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
