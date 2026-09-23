@@ -406,6 +406,23 @@ export const Navbar: React.FC = () => {
               )}
             </button>
 
+            <button
+              id="nav-link-ai-videos"
+              onClick={() => navigate({ type: 'ai-videos' })}
+              className={`hover:text-stone-950 transition relative py-1 flex items-center gap-1.5 ${
+                isActive('ai-videos') ? 'text-stone-950 font-bold' : 'text-stone-600'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>AI Videos</span>
+              <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold">
+                NEW
+              </span>
+              {isActive('ai-videos') && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-stone-900 rounded-full" />
+              )}
+            </button>
+
             {/* Categories dropdown or direct links */}
             <div className="relative group">
               <button
@@ -511,6 +528,22 @@ export const Navbar: React.FC = () => {
             >
               <span>Shop All Products</span>
               <ArrowRight className="w-4 h-4 text-stone-400" />
+            </button>
+
+            <button
+              onClick={() => {
+                navigate({ type: 'ai-videos' });
+                setMobileMenuOpen(false);
+              }}
+              className="text-left py-2 px-3 rounded-lg bg-amber-50/70 border border-amber-200/80 text-amber-900 font-bold flex items-center justify-between"
+            >
+              <span className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-600" />
+                <span>AI Videos Lookbook</span>
+              </span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 bg-amber-200/80 text-amber-900 rounded font-bold">
+                NEW
+              </span>
             </button>
 
             <button

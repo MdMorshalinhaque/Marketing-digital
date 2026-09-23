@@ -17,16 +17,36 @@ import {
   Users,
   Eye,
   RefreshCw,
+  Sparkles,
+  Film,
+  Smartphone,
+  Tv,
+  Settings,
+  Subtitles,
+  Volume2,
+  Play,
+  ExternalLink,
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { db } from '../services/db';
-import { Product, Order, Coupon } from '../types';
+import { videoService } from '../services/videoService';
+import { Product, Order, Coupon, AIVideo } from '../types';
+import { AIVideoGeneratorModal } from '../components/video/AIVideoGeneratorModal';
+import { ProductVideoPlayer } from '../components/video/ProductVideoPlayer';
 
 export const AdminDashboardPage: React.FC = () => {
   const { showToast, navigate } = useShop();
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'inventory' | 'coupons'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'inventory' | 'coupons' | 'ai-videos'>('overview');
+
+  // AI Videos state
+  const [aiVideos, setAiVideos] = useState<AIVideo[]>(() => videoService.getVideos());
+  const [selectedAiVideoForEdit, setSelectedAiVideoForEdit] = useState<AIVideo | null>(null);
+  const [isAiVideoGeneratorOpen, setIsAiVideoGeneratorOpen] = useState<boolean>(false);
+  const [previewingVideo, setPreviewingVideo] = useState<AIVideo | null>(null);
+  const [videoSearch, setVideoSearch] = useState<string>('');
+  const [videoStyleFilter, setVideoStyleFilter] = useState<string>('all');
 
   // Products state
   const [products, setProducts] = useState<Product[]>(() => db.getProducts());
@@ -65,6 +85,21 @@ export const AdminDashboardPage: React.FC = () => {
     setProducts(db.getProducts());
     setOrders(db.getOrders());
     setCoupons(db.getCoupons());
+    setAiVideos(videoService.getVideos());
+  };
+
+  const handleDeleteAiVideo = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this AI promotional video?')) {
+      videoService.deleteVideo(id);
+      refreshData();
+      showToast('AI Video removed from product page', 'info');
+    }
+  };
+
+  const handleToggleFeaturedVideo = (id: string) => {
+    videoService.toggleFeatured(id);
+    refreshData();
+    showToast('Video homepage spotlight updated', 'success');
   };
 
   // Metrics calculation
@@ -335,6 +370,18 @@ export const AdminDashboardPage: React.FC = () => {
         >
           <Tag className="w-4 h-4" />
           <span>Promo Codes ({coupons.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('ai-videos')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2 ${
+            activeTab === 'ai-videos'
+              ? 'bg-stone-900 text-amber-400 shadow-sm'
+              : 'bg-white text-stone-600 hover:bg-stone-100'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-amber-500" />
+          <span>AI Videos & Reels ({aiVideos.length})</span>
         </button>
       </div>
 
@@ -779,6 +826,266 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
       )}
 
+      {/* TAB 5: AI VIDEOS & REELS MANAGEMENT */}
+      {activeTab === 'ai-videos' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Top AI Video Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-5 rounded-3xl bg-white border border-stone-200 shadow-sm space-y-1">
+              <span className="text-xs text-stone-400 font-bold uppercase tracking-wider">
+                Total AI Videos
+              </span>
+              <h3 className="text-2xl font-black text-stone-900">{aiVideos.length}</h3>
+              <p className="text-[11px] text-stone-500">Synthesized product lookbooks</p>
+            </div>
+
+            <div className="p-5 rounded-3xl bg-white border border-stone-200 shadow-sm space-y-1">
+              <span className="text-xs text-stone-400 font-bold uppercase tracking-wider">
+                Total Lookbook Views
+              </span>
+              <h3 className="text-2xl font-black text-stone-900">
+                {aiVideos.reduce((sum, v) => sum + (v.viewsCount || 0), 0).toLocaleString()}
+              </h3>
+              <p className="text-[11px] text-emerald-600 font-semibold">Across Storefront & Reels</p>
+            </div>
+
+            <div className="p-5 rounded-3xl bg-white border border-stone-200 shadow-sm space-y-1">
+              <span className="text-xs text-stone-400 font-bold uppercase tracking-wider">
+                Customer Likes
+              </span>
+              <h3 className="text-2xl font-black text-stone-900">
+                {aiVideos.reduce((sum, v) => sum + (v.likesCount || 0), 0).toLocaleString()}
+              </h3>
+              <p className="text-[11px] text-stone-500">Customer engagement reactions</p>
+            </div>
+
+            <div className="p-5 rounded-3xl bg-white border border-stone-200 shadow-sm space-y-1">
+              <span className="text-xs text-stone-400 font-bold uppercase tracking-wider">
+                Synthesis Engine
+              </span>
+              <div className="flex items-center gap-1.5 pt-0.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <h3 className="text-sm font-extrabold text-stone-900">
+                  {videoService.getExternalApiConfig().isEnabled
+                    ? `${videoService.getExternalApiConfig().provider.toUpperCase()} API`
+                    : 'Built-in Canvas Studio'}
+                </h3>
+              </div>
+              <p className="text-[11px] text-stone-500">
+                {videoService.getExternalApiConfig().isEnabled ? 'Cloud Generative API' : 'Demo & Local Engine Ready'}
+              </p>
+            </div>
+          </div>
+
+          {/* Action Bar & Filter Controls */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5 bg-white rounded-3xl border border-stone-200 shadow-sm">
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              <div className="relative flex-1 md:w-72">
+                <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  value={videoSearch}
+                  onChange={(e) => setVideoSearch(e.target.value)}
+                  placeholder="Search video title or product..."
+                  className="w-full pl-10 pr-4 py-2 border border-stone-200 rounded-xl text-xs bg-stone-50 focus:bg-white focus:outline-none focus:border-stone-900"
+                />
+              </div>
+
+              <select
+                value={videoStyleFilter}
+                onChange={(e) => setVideoStyleFilter(e.target.value)}
+                className="px-3 py-2 border border-stone-200 rounded-xl text-xs font-semibold bg-stone-50 text-stone-800"
+              >
+                <option value="all">All Styles</option>
+                <option value="luxury">Luxury Style</option>
+                <option value="energetic">Energetic Streetwear</option>
+                <option value="minimal">Minimal Handloom</option>
+                <option value="social">Social Media (9:16)</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedAiVideoForEdit(null);
+                  setIsAiVideoGeneratorOpen(true);
+                }}
+                className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-stone-950 font-extrabold rounded-xl text-xs flex items-center gap-2 shadow-sm transition"
+              >
+                <Sparkles className="w-4 h-4 text-stone-950" />
+                <span>Generate AI Video</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Video Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {aiVideos
+              .filter((v) => {
+                const matchesSearch =
+                  v.title.toLowerCase().includes(videoSearch.toLowerCase()) ||
+                  v.productName.toLowerCase().includes(videoSearch.toLowerCase());
+                const matchesStyle = videoStyleFilter === 'all' || v.style === videoStyleFilter;
+                return matchesSearch && matchesStyle;
+              })
+              .map((video) => {
+                const product = db.getProductById(video.productId);
+
+                return (
+                  <div
+                    key={video.id}
+                    className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                  >
+                    <div>
+                      {/* Media Header with aspect ratio & play button */}
+                      <div className="relative aspect-[16/10] bg-stone-950 overflow-hidden">
+                        <img
+                          src={video.thumbnailUrl}
+                          alt={video.title}
+                          className="w-full h-full object-cover brightness-95"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-transparent to-black/30" />
+
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                          <span className="px-2.5 py-0.5 rounded-full bg-stone-900/85 backdrop-blur-md text-[10px] font-bold text-amber-400 border border-amber-400/30 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-amber-400" />
+                            <span>{video.style.toUpperCase()}</span>
+                          </span>
+                          {video.aspectRatio === '9:16' && (
+                            <span className="px-2 py-0.5 rounded-full bg-purple-900/80 text-[10px] font-bold text-purple-200">
+                              9:16 REEL
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="absolute top-3 right-3 text-[10px] font-mono font-bold text-stone-200 bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                          {video.duration}s
+                        </div>
+
+                        {/* Play trigger overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewingVideo(video)}
+                            className="w-12 h-12 rounded-full bg-amber-400 text-stone-950 flex items-center justify-center shadow-lg hover:scale-110 transition"
+                          >
+                            <Play className="w-5 h-5 ml-0.5 fill-current" />
+                          </button>
+                        </div>
+
+                        <div className="absolute bottom-2.5 left-3 right-3 text-left">
+                          <p className="text-[11px] text-stone-200 line-clamp-1 italic font-medium">
+                            "{video.captions[0]?.text || video.marketingMessage}"
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Video Details */}
+                      <div className="p-5 space-y-3">
+                        <div>
+                          <div className="text-[11px] uppercase font-bold text-amber-800">
+                            {product?.brand || 'AURA'}
+                          </div>
+                          <h4 className="text-base font-bold text-stone-900 line-clamp-1">
+                            {video.title}
+                          </h4>
+                          <p className="text-xs text-stone-500 mt-1 line-clamp-2 leading-relaxed">
+                            {video.marketingMessage}
+                          </p>
+                        </div>
+
+                        {/* Metadata details */}
+                        <div className="p-3 rounded-2xl bg-stone-50 border border-stone-100 text-xs space-y-1.5">
+                          <div className="flex items-center justify-between text-stone-600">
+                            <span className="flex items-center gap-1">
+                              <Volume2 className="w-3.5 h-3.5 text-stone-500" /> Voiceover:
+                            </span>
+                            <span className="font-semibold text-stone-800">
+                              {video.voiceover.enabled
+                                ? `${video.voiceover.gender} (${video.voiceover.language.toUpperCase()})`
+                                : 'Disabled'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-stone-600">
+                            <span className="flex items-center gap-1">
+                              <Subtitles className="w-3.5 h-3.5 text-stone-500" /> Subtitles:
+                            </span>
+                            <span className="font-semibold text-stone-800">
+                              {video.captions.length} timed lines
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-stone-600">
+                            <span>Views & Engagement:</span>
+                            <span className="font-mono font-bold text-stone-800">
+                              {video.viewsCount || 0} views • {video.likesCount || 0} likes
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Homepage Featured Toggle */}
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-xs font-semibold text-stone-700">
+                            Featured on Homepage Showcase
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleFeaturedVideo(video.id)}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition ${
+                              video.featuredOnHome
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                            }`}
+                          >
+                            {video.featuredOnHome ? '★ Featured' : 'Not Featured'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Action Footer */}
+                    <div className="p-4 bg-stone-50 border-t border-stone-100 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedAiVideoForEdit(video);
+                            setIsAiVideoGeneratorOpen(true);
+                          }}
+                          className="px-3 py-1.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-100 text-stone-800 text-xs font-bold transition flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Edit / Regenerate</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => navigate({ type: 'product-details', productId: video.productId })}
+                          className="p-1.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-100 text-stone-600 hover:text-stone-900 transition"
+                          title="View on Product Page"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAiVideo(video.id)}
+                        className="p-1.5 rounded-xl border border-stone-200 bg-white hover:bg-rose-50 text-stone-400 hover:text-rose-600 transition"
+                        title="Delete AI Video"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
       {/* Product Add/Edit Modal */}
       {isProductModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1054,6 +1361,65 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Video Preview Modal */}
+      {previewingVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-sm animate-in fade-in">
+          <div className="relative bg-stone-900 rounded-3xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl border border-stone-800 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-800 text-white">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <h3 className="font-extrabold text-sm truncate max-w-sm">
+                  {previewingVideo.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewingVideo(null)}
+                className="p-1 rounded-full text-stone-400 hover:text-white hover:bg-stone-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <ProductVideoPlayer
+              video={previewingVideo}
+              product={db.getProductById(previewingVideo.productId)}
+              autoplay={true}
+              loop={true}
+              className="w-full"
+            />
+
+            <div className="flex items-center justify-between text-xs text-stone-400 pt-2 border-t border-stone-800">
+              <span className="capitalize">Style: {previewingVideo.style} • {previewingVideo.duration}s</span>
+              <button
+                type="button"
+                onClick={() => setPreviewingVideo(null)}
+                className="px-4 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-white font-bold transition"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Video Generator Modal */}
+      {isAiVideoGeneratorOpen && (
+        <AIVideoGeneratorModal
+          isOpen={isAiVideoGeneratorOpen}
+          onClose={() => {
+            setIsAiVideoGeneratorOpen(false);
+            setSelectedAiVideoForEdit(null);
+          }}
+          initialProductId={selectedAiVideoForEdit?.productId || undefined}
+          initialVideo={selectedAiVideoForEdit || null}
+          onSaved={(savedVideo) => {
+            refreshData();
+            showToast('AI Video saved to product lookbook!', 'success');
+          }}
+        />
       )}
     </div>
   );

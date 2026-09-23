@@ -16,6 +16,7 @@ import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { WishlistPage } from './pages/WishlistPage';
+import { AIVideosPage } from './pages/AIVideosPage';
 
 const AppContent: React.FC = () => {
   const { currentView } = useShop();
@@ -40,6 +41,7 @@ const AppContent: React.FC = () => {
         {currentView.type === 'product-details' && (
           <ProductDetailsPage productId={currentView.productId} />
         )}
+        {currentView.type === 'ai-videos' && <AIVideosPage />}
         {currentView.type === 'cart' && <CartPage />}
         {currentView.type === 'checkout' && <CheckoutPage />}
         {currentView.type === 'wishlist' && <WishlistPage />}

@@ -20,7 +20,77 @@ export interface Product {
   colors: { name: string; hex: string }[];
   stock: number;
   tags: string[];
+  aiVideoId?: string;
+  hasAiVideo?: boolean;
   createdAt: string;
+}
+
+export type VideoStyle = 'professional' | 'minimal' | 'luxury' | 'energetic' | 'social';
+export type VideoDuration = 10 | 15 | 30 | 60;
+export type VideoAspectRatio = '16:9' | '9:16' | '1:1';
+export type VoiceoverLanguage = 'en' | 'bn' | 'hi';
+export type VoiceoverGender = 'female' | 'male';
+export type SocialPlatformPreset = 'instagram' | 'tiktok' | 'youtube_shorts' | 'facebook' | 'standard';
+
+export interface VideoCaptionSegment {
+  id: string;
+  startSec: number;
+  endSec: number;
+  text: string;
+}
+
+export interface VoiceoverConfig {
+  enabled: boolean;
+  language: VoiceoverLanguage;
+  gender: VoiceoverGender;
+  speed: number;
+  script: string;
+}
+
+export interface VideoScene {
+  id: string;
+  imageIndex: number;
+  durationSec: number;
+  zoomEffect: 'zoom-in' | 'zoom-out' | 'pan-left' | 'pan-right' | 'subtle-pulse';
+  headline: string;
+  subline: string;
+  badge?: string;
+}
+
+export interface AIVideo {
+  id: string;
+  productId: string;
+  productName: string;
+  title: string;
+  marketingMessage: string;
+  style: VideoStyle;
+  duration: VideoDuration;
+  aspectRatio: VideoAspectRatio;
+  platformPreset?: SocialPlatformPreset;
+  status: 'ready' | 'generating' | 'failed' | 'draft';
+  externalApiConnected: boolean;
+  externalProvider?: 'runway' | 'luma' | 'kling' | 'veo' | 'custom';
+  videoUrl?: string;
+  thumbnailUrl: string;
+  images: string[];
+  scenes: VideoScene[];
+  captions: VideoCaptionSegment[];
+  voiceover: VoiceoverConfig;
+  featuresHighlight: string[];
+  viewsCount: number;
+  likesCount: number;
+  featuredOnHome: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExternalVideoApiConfig {
+  provider: 'runway' | 'luma' | 'kling' | 'veo' | 'custom';
+  apiKey: string;
+  apiEndpoint?: string;
+  modelName?: string;
+  isEnabled: boolean;
+  autoSync: boolean;
 }
 
 export interface Category {
@@ -169,7 +239,8 @@ export type PageView =
   | { type: 'cart' }
   | { type: 'checkout' }
   | { type: 'wishlist' }
+  | { type: 'ai-videos'; videoId?: string; productId?: string }
   | { type: 'account'; tab?: 'profile' | 'orders' | 'tracking' | 'wishlist' | 'addresses' }
   | { type: 'about' }
   | { type: 'contact' }
-  | { type: 'admin'; tab?: 'overview' | 'products' | 'orders' | 'categories' | 'coupons' | 'reviews' | 'users' };
+  | { type: 'admin'; tab?: 'overview' | 'products' | 'orders' | 'inventory' | 'coupons' | 'reviews' | 'users' | 'ai-videos' };

@@ -14,6 +14,7 @@ import {
 import { useShop } from '../context/ShopContext';
 import { db } from '../services/db';
 import { ProductCard } from '../components/ProductCard';
+import { AIVideoShowcase } from '../components/video/AIVideoShowcase';
 
 export const HomePage: React.FC = () => {
   const { navigate, showToast } = useShop();
@@ -162,6 +163,9 @@ export const HomePage: React.FC = () => {
           ))}
         </div>
       </section>
+
+      {/* AI Video Showcase Carousel Section */}
+      <AIVideoShowcase />
 
       {/* 3. Special Offers & Flash Discount Section with Countdown */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

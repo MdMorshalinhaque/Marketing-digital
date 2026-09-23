@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Star,
   Heart,
@@ -15,18 +15,25 @@ import {
   Share2,
   X,
   MessageSquare,
+  Sparkles,
+  Play,
+  Tv,
+  Film,
 } from 'lucide-react';
-import { Product, Review } from '../types';
+import { Product, Review, AIVideo } from '../types';
 import { useShop } from '../context/ShopContext';
 import { db } from '../services/db';
+import { videoService } from '../services/videoService';
 import { ProductCard } from '../components/ProductCard';
+import { ProductVideoPlayer } from '../components/video/ProductVideoPlayer';
+import { AIVideoGeneratorModal } from '../components/video/AIVideoGeneratorModal';
 
 interface ProductDetailsPageProps {
   productId: string;
 }
 
 export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ productId }) => {
-  const { addToCart, toggleWishlist, isInWishlist, navigate, showToast } = useShop();
+  const { addToCart, toggleWishlist, isInWishlist, navigate, showToast, currentUser } = useShop();
   const product = db.getProductById(productId);
 
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
@@ -35,6 +42,20 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ productI
   const [quantity, setQuantity] = useState<number>(1);
   const [sizeGuideOpen, setSizeGuideOpen] = useState<boolean>(false);
   const [reviewModalOpen, setReviewModalOpen] = useState<boolean>(false);
+
+  // AI Video states
+  const [mediaMode, setMediaMode] = useState<'photos' | 'video'>('photos');
+  const [aiVideo, setAiVideo] = useState<AIVideo | undefined>(() =>
+    productId ? videoService.getVideoByProductId(productId) : undefined
+  );
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState<boolean>(false);
+  const [isQuickGenerating, setIsQuickGenerating] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (productId) {
+      setAiVideo(videoService.getVideoByProductId(productId));
+    }
+  }, [productId]);
 
   // New review form states
   const [newReviewAuthor, setNewReviewAuthor] = useState('');
@@ -125,49 +146,163 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ productI
 
       {/* Main Product Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
-        {/* Left Column: Image Gallery */}
+        {/* Left Column: Image Gallery & AI Video Player */}
         <div className="lg:col-span-7 space-y-4">
-          {/* Main Large Image */}
-          <div className="relative aspect-[4/5] rounded-3xl overflow-hidden bg-stone-100 border border-stone-200">
-            <img
-              src={product.images[selectedImageIndex] || product.images[0]}
-              alt={product.name}
-              className="w-full h-full object-cover object-center transition-all duration-300"
-            />
-            {product.discountPercent > 0 && (
-              <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-rose-600 text-white text-xs font-extrabold shadow-md">
-                -{product.discountPercent}% OFF
-              </span>
+          {/* Media View Mode Switcher */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center bg-stone-100 p-1 rounded-2xl border border-stone-200 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setMediaMode('photos')}
+                className={`px-3.5 py-1.5 rounded-xl transition ${
+                  mediaMode === 'photos'
+                    ? 'bg-white text-stone-900 shadow-sm font-bold'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                Photos ({product.images.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setMediaMode('video')}
+                className={`px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 ${
+                  mediaMode === 'video'
+                    ? 'bg-stone-900 text-amber-400 shadow-sm font-bold'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>AI Video Lookbook</span>
+                {aiVideo && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 bg-amber-400/20 text-amber-300 rounded font-bold">
+                    {aiVideo.duration}s
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {currentUser?.role === 'admin' && (
+              <button
+                type="button"
+                onClick={() => setIsVideoModalOpen(true)}
+                className="text-xs text-amber-800 hover:text-amber-900 font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-amber-50 transition border border-amber-200"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                <span>{aiVideo ? 'Edit AI Video' : 'Generate AI Video'}</span>
+              </button>
             )}
-            <button
-              onClick={() => toggleWishlist(product.id)}
-              className={`absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md transition shadow-md ${
-                inWishlist
-                  ? 'bg-rose-500 text-white'
-                  : 'bg-white/90 text-stone-700 hover:text-rose-500'
-              }`}
-            >
-              <Heart className={`w-5 h-5 ${inWishlist ? 'fill-white' : ''}`} />
-            </button>
           </div>
 
-          {/* Thumbnails Row */}
-          {product.images.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {product.images.map((img, idx) => (
+          {/* Media Presentation Display */}
+          {mediaMode === 'video' ? (
+            aiVideo ? (
+              <div className="space-y-3">
+                <ProductVideoPlayer
+                  video={aiVideo}
+                  product={product}
+                  autoplay={true}
+                  loop={true}
+                  className="w-full shadow-lg"
+                />
+                <div className="flex items-center justify-between text-xs text-stone-500 px-1">
+                  <span>AI Video Lookbook • {aiVideo.style.toUpperCase()}</span>
+                  <span>Voiceover: {aiVideo.voiceover?.gender} ({aiVideo.voiceover?.language.toUpperCase()})</span>
+                </div>
+              </div>
+            ) : (
+              <div className="aspect-[4/3] rounded-3xl bg-stone-50 border-2 border-dashed border-stone-300 p-8 flex flex-col items-center justify-center text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-stone-900">AI Video Not Yet Generated</h4>
+                  <p className="text-xs text-stone-500 max-w-sm mt-1">
+                    Synthesize an AI promotional video with smooth camera motion, product zoom, and voiceover in seconds.
+                  </p>
+                </div>
                 <button
-                  key={idx}
-                  onClick={() => setSelectedImageIndex(idx)}
-                  className={`relative w-20 h-24 rounded-2xl overflow-hidden border-2 flex-shrink-0 transition ${
-                    selectedImageIndex === idx
-                      ? 'border-stone-900 shadow-md ring-1 ring-stone-900'
-                      : 'border-transparent opacity-70 hover:opacity-100'
+                  type="button"
+                  disabled={isQuickGenerating}
+                  onClick={async () => {
+                    setIsQuickGenerating(true);
+                    const generated = await videoService.generateAIVideo({
+                      product,
+                      style: 'luxury',
+                      duration: 15,
+                      aspectRatio: '16:9',
+                      voiceoverEnabled: true,
+                      voiceoverLanguage: 'en',
+                      voiceoverGender: 'female',
+                    });
+                    videoService.saveVideo(generated);
+                    setAiVideo(generated);
+                    setIsQuickGenerating(false);
+                    showToast('AI Video generated successfully!', 'success');
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>{isQuickGenerating ? 'Generating Video...' : 'Synthesize AI Video (15s)'}</span>
+                </button>
+              </div>
+            )
+          ) : (
+            <>
+              {/* Main Large Image */}
+              <div className="relative aspect-[4/5] rounded-3xl overflow-hidden bg-stone-100 border border-stone-200">
+                <img
+                  src={product.images[selectedImageIndex] || product.images[0]}
+                  alt={product.name}
+                  className="w-full h-full object-cover object-center transition-all duration-300"
+                />
+                {product.discountPercent > 0 && (
+                  <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-rose-600 text-white text-xs font-extrabold shadow-md">
+                    -{product.discountPercent}% OFF
+                  </span>
+                )}
+                {aiVideo && (
+                  <button
+                    type="button"
+                    onClick={() => setMediaMode('video')}
+                    className="absolute bottom-4 left-4 px-3.5 py-1.5 rounded-full bg-stone-900/85 backdrop-blur-md text-amber-400 border border-amber-400/30 text-xs font-bold flex items-center gap-1.5 shadow-lg hover:bg-stone-900 transition"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Watch AI Video ({aiVideo.duration}s)</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => toggleWishlist(product.id)}
+                  className={`absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md transition shadow-md ${
+                    inWishlist
+                      ? 'bg-rose-500 text-white'
+                      : 'bg-white/90 text-stone-700 hover:text-rose-500'
                   }`}
                 >
-                  <img src={img} alt={`${product.name} ${idx}`} className="w-full h-full object-cover" />
+                  <Heart className={`w-5 h-5 ${inWishlist ? 'fill-white' : ''}`} />
                 </button>
-              ))}
-            </div>
+              </div>
+
+              {/* Thumbnails Row */}
+              {product.images.length > 1 && (
+                <div className="flex gap-3 overflow-x-auto pb-1">
+                  {product.images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedImageIndex(idx)}
+                      className={`relative w-20 h-24 rounded-2xl overflow-hidden border-2 flex-shrink-0 transition ${
+                        selectedImageIndex === idx
+                          ? 'border-stone-900 shadow-md ring-1 ring-stone-900'
+                          : 'border-transparent opacity-70 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={img} alt={`${product.name} ${idx}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -407,6 +542,45 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ productI
         </div>
       </div>
 
+      {/* AI Video Lookbook Section if available */}
+      {aiVideo && (
+        <section className="pt-12 border-t border-stone-200 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold">
+                <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                <span>AI VIDEO LOOKBOOK</span>
+              </div>
+              <h3 className="text-2xl font-extrabold text-stone-900 tracking-tight">
+                Watch {product.name} in Motion
+              </h3>
+              <p className="text-xs text-stone-500">
+                Crafted with AI motion zooms, narration voiceover, and synchronized subtitles.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-stone-600 bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200">
+                Duration: {aiVideo.duration}s
+              </span>
+              <span className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 capitalize">
+                Style: {aiVideo.style}
+              </span>
+            </div>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            <ProductVideoPlayer
+              video={aiVideo}
+              product={product}
+              autoplay={false}
+              loop={true}
+              className="w-full shadow-2xl"
+            />
+          </div>
+        </section>
+      )}
+
       {/* Customer Reviews Section */}
       <section className="pt-12 border-t border-stone-200">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -631,6 +805,21 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ productI
             </form>
           </div>
         </div>
+      )}
+
+      {/* AI Video Generator Modal */}
+      {isVideoModalOpen && (
+        <AIVideoGeneratorModal
+          isOpen={isVideoModalOpen}
+          onClose={() => setIsVideoModalOpen(false)}
+          initialProductId={product.id}
+          initialVideo={aiVideo || null}
+          onSaved={(saved) => {
+            setAiVideo(saved);
+            setMediaMode('video');
+            showToast('AI Video updated and saved to product page!', 'success');
+          }}
+        />
       )}
     </div>
   );
