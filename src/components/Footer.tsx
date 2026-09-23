@@ -209,7 +209,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2 text-xs text-stone-400">
               <li>
                 <button
-                  onClick={() => navigate({ type: 'account', tab: 'tracking' })}
+                  onClick={() => navigate({ type: 'track-order' })}
                   className="hover:text-amber-400 transition"
                 >
                   Track Courier Order

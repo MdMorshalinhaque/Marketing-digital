@@ -951,7 +951,35 @@ export const db = {
 
   getOrderById(idOrOrderNum: string): Order | undefined {
     const orders = this.getOrders();
-    return orders.find((o) => o.id === idOrOrderNum || o.orderNumber.toLowerCase() === idOrOrderNum.toLowerCase() || o.trackingNumber.toLowerCase() === idOrOrderNum.toLowerCase());
+    const query = idOrOrderNum.trim().toLowerCase();
+    return orders.find(
+      (o) =>
+        o.id.toLowerCase() === query ||
+        o.orderNumber.toLowerCase() === query ||
+        o.trackingNumber.toLowerCase() === query
+    );
+  },
+
+  getOrderByOrderAndEmail(
+    idOrOrderNum: string,
+    email: string
+  ): { order?: Order; error?: 'not_found' | 'email_mismatch' } {
+    const trimmedQuery = idOrOrderNum.trim().toLowerCase();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    const order = this.getOrderById(trimmedQuery);
+    if (!order) {
+      return { error: 'not_found' };
+    }
+
+    const orderEmail = (order.customerEmail || '').trim().toLowerCase();
+    const shippingEmail = (order.shippingAddress?.email || '').trim().toLowerCase();
+
+    if (orderEmail === trimmedEmail || (shippingEmail && shippingEmail === trimmedEmail)) {
+      return { order };
+    }
+
+    return { error: 'email_mismatch' };
   },
 
   saveOrder(order: Order): void {

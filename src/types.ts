@@ -241,6 +241,7 @@ export type PageView =
   | { type: 'wishlist' }
   | { type: 'ai-videos'; videoId?: string; productId?: string }
   | { type: 'account'; tab?: 'profile' | 'orders' | 'tracking' | 'wishlist' | 'addresses' }
+  | { type: 'track-order'; orderId?: string; email?: string }
   | { type: 'about' }
   | { type: 'contact' }
   | { type: 'admin'; tab?: 'overview' | 'products' | 'orders' | 'inventory' | 'coupons' | 'reviews' | 'users' | 'ai-videos' };

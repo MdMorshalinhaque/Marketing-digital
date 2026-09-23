@@ -318,7 +318,13 @@ export const CheckoutPage: React.FC = () => {
           {/* Actions */}
           <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
-              onClick={() => navigate({ type: 'account', tab: 'tracking' })}
+              onClick={() =>
+                navigate({
+                  type: 'track-order',
+                  orderId: confirmedOrder.orderNumber,
+                  email: confirmedOrder.customerEmail,
+                })
+              }
               className="w-full py-3 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm"
             >
               <Truck className="w-4 h-4 text-amber-400" />

@@ -17,6 +17,7 @@ import { ContactPage } from './pages/ContactPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { WishlistPage } from './pages/WishlistPage';
 import { AIVideosPage } from './pages/AIVideosPage';
+import { TrackOrderPage } from './pages/TrackOrderPage';
 
 const AppContent: React.FC = () => {
   const { currentView } = useShop();
@@ -45,6 +46,12 @@ const AppContent: React.FC = () => {
         {currentView.type === 'cart' && <CartPage />}
         {currentView.type === 'checkout' && <CheckoutPage />}
         {currentView.type === 'wishlist' && <WishlistPage />}
+        {currentView.type === 'track-order' && (
+          <TrackOrderPage
+            initialOrderId={currentView.orderId}
+            initialEmail={currentView.email}
+          />
+        )}
         {currentView.type === 'account' && (
           <AccountPage initialTab={currentView.tab} />
         )}

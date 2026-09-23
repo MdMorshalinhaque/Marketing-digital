@@ -325,13 +325,31 @@ export const AccountPage: React.FC<AccountPageProps> = ({ initialTab = 'orders' 
                     </div>
 
                     {/* Total & Courier pill */}
-                    <div className="pt-3 border-t border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                      <div className="text-stone-500 text-[11px]">
-                        Courier: <strong>{ord.courierName}</strong> (Tracking: <strong>{ord.trackingNumber}</strong>)
+                    <div className="pt-3 border-t border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="text-stone-500 text-[11px] flex flex-wrap items-center gap-2">
+                        <span>Courier: <strong>{ord.courierName}</strong></span>
+                        <span>•</span>
+                        <span>Code: <strong className="font-mono">{ord.trackingNumber}</strong></span>
                       </div>
-                      <div className="text-right">
-                        <span className="text-stone-500 mr-2">Total:</span>
-                        <span className="text-sm font-black text-stone-900">৳{ord.total.toLocaleString()}</span>
+                      <div className="flex items-center gap-3 justify-between sm:justify-end">
+                        <div className="text-right">
+                          <span className="text-stone-500 mr-2 text-[11px]">Total:</span>
+                          <span className="text-sm font-black text-stone-900">৳{ord.total.toLocaleString()}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate({
+                              type: 'track-order',
+                              orderId: ord.orderNumber,
+                              email: ord.customerEmail,
+                            })
+                          }
+                          className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs flex items-center gap-1 transition"
+                        >
+                          <Truck className="w-3.5 h-3.5 text-amber-700" />
+                          <span>Track Package</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -347,11 +365,21 @@ export const AccountPage: React.FC<AccountPageProps> = ({ initialTab = 'orders' 
           {/* TAB 2: LIVE ORDER TRACKING */}
           {activeTab === 'tracking' && (
             <div className="bg-white rounded-3xl border border-stone-200 p-6 sm:p-8 shadow-sm space-y-6">
-              <div>
-                <h2 className="text-xl font-extrabold text-stone-900">Live Courier Order Tracking</h2>
-                <p className="text-xs text-stone-500 mt-1">
-                  Enter your AURA Order Number (e.g. <code>AURA-BD-2026-9812</code>) or Courier Tracking Code.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-extrabold text-stone-900">Live Courier Order Tracking</h2>
+                  <p className="text-xs text-stone-500 mt-1">
+                    Enter your AURA Order Number (e.g. <code>AURA-BD-2026-9812</code>) or Courier Tracking Code.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate({ type: 'track-order' })}
+                  className="px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-950 font-bold text-xs flex items-center justify-center gap-1.5 transition"
+                >
+                  <Truck className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Open Dedicated Tracking Portal</span>
+                </button>
               </div>
 
               {/* Search Form */}

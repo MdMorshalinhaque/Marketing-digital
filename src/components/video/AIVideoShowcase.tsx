@@ -69,7 +69,7 @@ export const AIVideoShowcase: React.FC<AIVideoShowcaseProps> = ({
             <Sparkles className="w-3.5 h-3.5 text-amber-700" />
             <span>INTERACTIVE AI CATALOG</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-stone-900 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-stone-900 tracking-tight italic">
             {title}
           </h2>
           <p className="text-sm text-stone-600 leading-relaxed">
