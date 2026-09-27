@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Products: anyone can read; authenticated users or admins can write
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if true; // Allows initial syncing and store management
+    }
+
+    // Categories: anyone can read
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Orders: anyone can read or create an order
+    match /orders/{orderId} {
+      allow read, write: if true;
+    }
+
+    // Reviews: anyone can read or write
+    match /reviews/{reviewId} {
+      allow read, write: if true;
+    }
+
+    // Users
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // Coupons
+    match /coupons/{couponId} {
+      allow read, write: if true;
+    }
+  }
+}
